@@ -1,26 +1,239 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #050607;
+  --surface: #0b0d0f;
+  --surface-2: #111417;
+  --surface-3: #171a1e;
+
+  --foreground: #f7f7f7;
+  --muted: #8d9299;
+
+  --red: #f21f2b;
+  --red-dark: #a90f18;
+  --red-soft: rgba(
+    242,
+    31,
+    43,
+    0.12
+  );
+
+  --line: rgba(
+    255,
+    255,
+    255,
+    0.1
+  );
+
+  --page-width: 1500px;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background:
+    var(
+      --background
+    );
+
+  --color-foreground:
+    var(
+      --foreground
+    );
+
+  --font-sans:
+    var(
+      --font-geist-sans
+    );
+
+  --font-mono:
+    var(
+      --font-geist-mono
+    );
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing:
+    border-box;
+}
+
+html {
+  background:
+    var(
+      --background
+    );
+
+  color-scheme:
+    dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin:
+    0;
+
+  min-height:
+    100vh;
+
+  background:
+    radial-gradient(
+      circle at 50% -20%,
+      rgba(
+        242,
+        31,
+        43,
+        0.12
+      ),
+      transparent 35%
+    ),
+    var(
+      --background
+    );
+
+  color:
+    var(
+      --foreground
+    );
+
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+}
+
+a {
+  color:
+    inherit;
+
+  text-decoration:
+    none;
+}
+
+button,
+input {
+  font:
+    inherit;
+}
+
+::selection {
+  background:
+    var(
+      --red
+    );
+
+  color:
+    white;
+}
+
+.site-shell {
+  width:
+    min(
+      calc(
+        100% - 40px
+      ),
+      var(
+        --page-width
+      )
+    );
+
+  margin-inline:
+    auto;
+}
+
+.section-rule {
+  border-top:
+    1px solid
+    var(
+      --line
+    );
+}
+
+.movie-card-image {
+  position:
+    relative;
+
+  overflow:
+    hidden;
+
+  isolation:
+    isolate;
+
+  background:
+    linear-gradient(
+      135deg,
+      #20252c,
+      #08090a 70%
+    );
+}
+
+.movie-card-image::after {
+  content:
+    "";
+
+  position:
+    absolute;
+
+  inset:
+    0;
+
+  background:
+    linear-gradient(
+      180deg,
+      transparent 30%,
+      rgba(
+        0,
+        0,
+        0,
+        0.92
+      )
+    );
+
+  z-index:
+    -1;
+}
+
+.red-glow {
+  box-shadow:
+    0 0 50px
+    rgba(
+      242,
+      31,
+      43,
+      0.12
+    );
+}
+
+@media (
+  max-width:
+    700px
+) {
+  .site-shell {
+    width:
+      min(
+        calc(
+          100% - 24px
+        ),
+        var(
+          --page-width
+        )
+      );
+  }
+}
+@keyframes breakingTicker {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.breaking-ticker {
+  animation:
+    breakingTicker 32s linear infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .breaking-ticker {
+    animation: none;
+  }
 }

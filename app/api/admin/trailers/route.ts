@@ -1,0 +1,256 @@
+import {
+  NextResponse,
+} from "next/server";
+
+import {
+  createAdminClient,
+} from "@/lib/supabase/admin";
+
+type TrailerStatus =
+  | "draft"
+  | "published";
+
+type TrailerType =
+  | "teaser"
+  | "official-trailer"
+  | "final-trailer"
+  | "clip"
+  | "featurette";
+
+type CreateTrailerBody = {
+  title?: string;
+  slug?: string;
+  trailerType?: TrailerType;
+  description?: string;
+  youtubeUrl?: string;
+  youtubeVideoId?: string;
+  thumbnailUrl?: string;
+  status?: TrailerStatus;
+};
+
+const trailerTypes =
+  new Set<TrailerType>([
+    "teaser",
+    "official-trailer",
+    "final-trailer",
+    "clip",
+    "featurette",
+  ]);
+
+const statuses =
+  new Set<TrailerStatus>([
+    "draft",
+    "published",
+  ]);
+
+export async function POST(
+  request: Request,
+) {
+  try {
+    const body =
+      (await request.json()) as CreateTrailerBody;
+
+    const title =
+      body.title?.trim() ??
+      "";
+
+    const slug =
+      body.slug?.trim() ??
+      "";
+
+    const trailerType =
+      body.trailerType ??
+      "official-trailer";
+
+    const description =
+      body.description?.trim() ??
+      "";
+
+    const youtubeUrl =
+      body.youtubeUrl?.trim() ??
+      "";
+
+    const youtubeVideoId =
+      body.youtubeVideoId?.trim() ??
+      "";
+
+    const thumbnailUrl =
+      body.thumbnailUrl?.trim() ??
+      "";
+
+    const status =
+      body.status ??
+      "draft";
+
+    if (!title) {
+      return NextResponse.json(
+        {
+          error:
+            "Trailer title is required.",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (!slug) {
+      return NextResponse.json(
+        {
+          error:
+            "Trailer slug is required.",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (
+      !trailerTypes.has(
+        trailerType,
+      )
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Invalid trailer type.",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (
+      !statuses.has(
+        status,
+      )
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Invalid trailer status.",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (
+      !youtubeUrl ||
+      !youtubeVideoId
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "A valid YouTube trailer is required.",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    const supabase =
+      createAdminClient();
+
+    const publishedAt =
+      status ===
+      "published"
+        ? new Date().toISOString()
+        : null;
+
+    const {
+      data: trailer,
+      error,
+    } =
+      await supabase
+        .from("trailers")
+        .insert({
+          title,
+          slug,
+          trailer_type:
+            trailerType,
+          description:
+            description ||
+            null,
+          youtube_url:
+            youtubeUrl,
+          youtube_video_id:
+            youtubeVideoId,
+          thumbnail_url:
+            thumbnailUrl ||
+            null,
+          status,
+          published_at:
+            publishedAt,
+        })
+        .select(
+          `
+            id,
+            slug,
+            title,
+            trailer_type,
+            description,
+            youtube_url,
+            youtube_video_id,
+            thumbnail_url,
+            status,
+            published_at,
+            created_at,
+            updated_at
+          `,
+        )
+        .single();
+
+    if (error) {
+      if (
+        error.code ===
+        "23505"
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "A trailer with that slug already exists.",
+          },
+          {
+            status: 409,
+          },
+        );
+      }
+
+      throw error;
+    }
+
+    return NextResponse.json(
+      {
+        trailer,
+      },
+      {
+        status: 201,
+      },
+    );
+  } catch (
+    error
+  ) {
+    console.error(
+      "Create trailer failed:",
+      error,
+    );
+
+    return NextResponse.json(
+      {
+        error:
+          error instanceof
+          Error
+            ? error.message
+            : "Failed to create trailer.",
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+}
