@@ -505,7 +505,7 @@ const storyPeople =
             allow="autoplay"
             className="mx-auto mt-8 block w-full max-w-3xl border-0"
             style={{
-              height: "220px",
+              height: "200px",
             }}
           />
         ) : null}
