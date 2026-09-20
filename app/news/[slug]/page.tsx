@@ -507,6 +507,8 @@ const storyPeople =
             style={{
               height: "200px",
               backgroundColor: "#000000",
+              borderRadius: "16px",
+              overflow: "hidden",
             }}
           />
         ) : null}
