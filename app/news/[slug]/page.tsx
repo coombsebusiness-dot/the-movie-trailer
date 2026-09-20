@@ -506,6 +506,7 @@ const storyPeople =
             className="mx-auto mt-8 block w-full max-w-3xl border-0"
             style={{
               height: "200px",
+              backgroundColor: "transparent",
             }}
           />
         ) : null}
