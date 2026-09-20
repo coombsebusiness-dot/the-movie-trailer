@@ -59,6 +59,11 @@ export default async function EditNewsPage({
         seo_description,
         status,
         published_at,
+        publisher_audio_article_id,
+        publisher_audio_voice_id,
+        publisher_audio_status,
+        publisher_audio_enabled,
+        publisher_audio_generated_at,
         body
       `)
       .eq(
@@ -156,6 +161,16 @@ export default async function EditNewsPage({
 
           publishedAt:
             data.published_at,
+          publisherAudioArticleId:
+            data.publisher_audio_article_id,
+          publisherAudioVoiceId:
+            data.publisher_audio_voice_id,
+          publisherAudioStatus:
+            data.publisher_audio_status,
+          publisherAudioEnabled:
+            data.publisher_audio_enabled,
+          publisherAudioGeneratedAt:
+            data.publisher_audio_generated_at,
 
           excerpt:
             data.excerpt ??

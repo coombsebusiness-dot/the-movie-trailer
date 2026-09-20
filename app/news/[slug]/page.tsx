@@ -71,7 +71,10 @@ async function getStory(
           seo_description,
           source_name,
           source_url,
-          published_at
+          published_at,
+          publisher_audio_article_id,
+          publisher_audio_status,
+          publisher_audio_enabled
         `,
       )
       .eq(
@@ -488,6 +491,25 @@ const storyPeople =
         ) : (
           <div className="movie-card-image mx-auto mt-10 aspect-[16/9] max-w-6xl border border-white/10" />
         )}
+
+        {story.publisher_audio_enabled &&
+        story.publisher_audio_status ===
+          "ready" &&
+        story.publisher_audio_article_id ? (
+          <div className="mx-auto mt-8 max-w-3xl">
+            <iframe
+              src={`${process.env.NEXT_PUBLIC_PUBLISHER_AUDIO_URL ?? "http://localhost:3000"}/player/${encodeURIComponent(
+                story.publisher_audio_article_id,
+              )}`}
+              title="Listen to this article"
+              className="block w-full border-0"
+              style={{
+                height: "230px",
+              }}
+              loading="lazy"
+            />
+          </div>
+        ) : null}
 
         <div className="mx-auto mt-12 max-w-3xl">
           {body.intro ? (

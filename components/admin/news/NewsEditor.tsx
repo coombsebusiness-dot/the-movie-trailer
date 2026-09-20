@@ -25,6 +25,12 @@ type NewsSection = {
   youtubeUrl: string;
 };
 
+type PublisherAudioStatus =
+  | "idle"
+  | "processing"
+  | "ready"
+  | "failed";
+
 const categories = [
   "movie-news",
   "tv-news",
@@ -62,6 +68,12 @@ type NewsEditorInitialData = {
   | "published";
 
 publishedAt: string | null;
+
+  publisherAudioArticleId: string | null;
+  publisherAudioVoiceId: string | null;
+  publisherAudioStatus: string | null;
+  publisherAudioEnabled: boolean;
+  publisherAudioGeneratedAt: string | null;
 };
 
 type CuratedPerson = {
@@ -292,6 +304,65 @@ const [
           },
         ],
   );
+  const [
+    publisherAudioStatus,
+    setPublisherAudioStatus,
+  ] =
+    useState<PublisherAudioStatus>(
+      initialData?.publisherAudioStatus === "ready"
+        ? "ready"
+        : initialData?.publisherAudioStatus === "processing"
+          ? "processing"
+          : initialData?.publisherAudioStatus === "failed"
+            ? "failed"
+            : "idle",
+    );
+
+  const [
+    publisherAudioArticleId,
+    setPublisherAudioArticleId,
+  ] =
+    useState<string | null>(
+      initialData?.publisherAudioArticleId ?? null,
+
+    );
+
+  const [
+    publisherAudioMessage,
+    setPublisherAudioMessage,
+  ] =
+    useState(
+      initialData?.publisherAudioStatus === "ready"
+        ? "Article audio is ready."
+        : initialData?.publisherAudioStatus === "processing"
+          ? "Article audio is processing."
+          : initialData?.publisherAudioStatus === "failed"
+            ? "Article audio generation failed."
+            : "",
+    );
+
+  const [
+    publisherAudioEnabled,
+    setPublisherAudioEnabled,
+  ] =
+    useState(
+      initialData
+        ?.publisherAudioEnabled ??
+        false,
+    );
+
+  const [
+    isUpdatingPublisherAudioEnabled,
+    setIsUpdatingPublisherAudioEnabled,
+  ] =
+    useState(false);
+
+  const [
+    isGeneratingAudio,
+    setIsGeneratingAudio,
+  ] =
+    useState(false);
+
   const [
     isSaving,
     setIsSaving,
@@ -572,6 +643,238 @@ function applyGeneratedArticle(
     "AI article loaded into the editor. Review it before saving or publishing.",
   );
 }
+
+  async function waitForPublisherAudio(
+    articleId: string,
+  ) {
+    for (
+      let attempt = 0;
+      attempt < 120;
+      attempt += 1
+    ) {
+      await new Promise(
+        (resolve) =>
+          window.setTimeout(
+            resolve,
+            3000,
+          ),
+      );
+
+      const response =
+        await fetch(
+          `/api/admin/publisher-audio?articleId=${encodeURIComponent(
+            articleId,
+          )}&storyId=${encodeURIComponent(
+            initialData!.id,
+          )}`,
+          {
+            cache: "no-store",
+          },
+        );
+
+      const result =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          result.error ??
+            "Could not check audio status.",
+        );
+      }
+
+      if (
+        result.status ===
+        "ready"
+      ) {
+        setPublisherAudioStatus(
+          "ready",
+        );
+
+        setPublisherAudioMessage(
+          "Article audio is ready.",
+        );
+
+        return;
+      }
+
+      if (
+        result.status ===
+        "failed"
+      ) {
+        throw new Error(
+          result.error ??
+            "Audio generation failed.",
+        );
+      }
+
+      setPublisherAudioStatus(
+        "processing",
+      );
+
+      setPublisherAudioMessage(
+        "Publisher Audio is generating the narration...",
+      );
+    }
+
+    throw new Error(
+      "Audio is still processing. Try again shortly.",
+    );
+  }
+
+  async function updatePublisherAudioEnabled(
+    enabled: boolean,
+  ) {
+    if (!initialData) {
+      return;
+    }
+
+    setIsUpdatingPublisherAudioEnabled(
+      true,
+    );
+
+    try {
+      const response =
+        await fetch(
+          "/api/admin/publisher-audio",
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+            body:
+              JSON.stringify({
+                storyId:
+                  initialData.id,
+                enabled,
+              }),
+          },
+        );
+
+      const result =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          result.error ??
+            "Could not update player state.",
+        );
+      }
+
+      setPublisherAudioEnabled(
+        result.enabled,
+      );
+
+      setPublisherAudioMessage(
+        result.enabled
+          ? "Article audio is ready and visible on the published story."
+          : "Article audio is ready but hidden from readers.",
+      );
+    } catch (error) {
+      setPublisherAudioMessage(
+        error instanceof Error
+          ? error.message
+          : "Could not update player state.",
+      );
+    } finally {
+      setIsUpdatingPublisherAudioEnabled(
+        false,
+      );
+    }
+  }
+
+  async function generateArticleAudio() {
+    if (!initialData) {
+      setPublisherAudioMessage(
+        "Save the story before generating audio.",
+      );
+
+      return;
+    }
+
+    if (
+      !title.trim() ||
+      !effectiveSlug.trim()
+    ) {
+      setPublisherAudioMessage(
+        "The story needs a title and slug.",
+      );
+
+      return;
+    }
+
+    setIsGeneratingAudio(
+      true,
+    );
+
+    setPublisherAudioStatus(
+      "processing",
+    );
+
+    setPublisherAudioMessage(
+      "Sending article to Publisher Audio...",
+    );
+
+    try {
+      const response =
+        await fetch(
+          "/api/admin/publisher-audio",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+            body:
+              JSON.stringify({
+                storyId:
+                  initialData.id,
+                title,
+                slug:
+                  effectiveSlug,
+                intro,
+                sections,
+              }),
+          },
+        );
+
+      const result =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          result.error ??
+            "Could not generate article audio.",
+        );
+      }
+
+      setPublisherAudioArticleId(
+        result.articleId,
+      );
+
+      setPublisherAudioMessage(
+        "Narration started. Waiting for audio...",
+      );
+
+      await waitForPublisherAudio(
+        result.articleId,
+      );
+    } catch (error) {
+      setPublisherAudioStatus(
+        "failed",
+      );
+
+      setPublisherAudioMessage(
+        error instanceof Error
+          ? error.message
+          : "Could not generate article audio.",
+      );
+    } finally {
+      setIsGeneratingAudio(
+        false,
+      );
+    }
+  }
 
   async function saveStory(
     status:
@@ -1116,6 +1419,242 @@ setMessage(
       </div>
 
       <aside className="space-y-6">
+        <section className="overflow-hidden border border-[#f21f2b]/35 bg-[#0b0d0f]">
+          <div className="border-b border-white/10 p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-[#f21f2b]">
+                  Publisher Audio
+                </p>
+
+                <h2 className="mt-2 text-lg font-black tracking-tight text-white">
+                  Give this article a voice.
+                </h2>
+
+                <p className="mt-1 text-xs leading-5 text-white/40">
+                  Generate narration directly from the story you are editing.
+                </p>
+              </div>
+
+              <div
+                className={`shrink-0 border px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.12em] ${
+                  publisherAudioStatus ===
+                  "ready"
+                    ? "border-green-500/30 bg-green-500/10 text-green-400"
+                    : publisherAudioStatus ===
+                        "processing"
+                      ? "border-[#f21f2b]/40 bg-[#f21f2b]/10 text-[#ff5b65]"
+                      : publisherAudioStatus ===
+                          "failed"
+                        ? "border-red-700/40 bg-red-950/30 text-red-400"
+                        : "border-white/10 bg-black text-white/35"
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${
+                      publisherAudioStatus ===
+                      "ready"
+                        ? "bg-green-500"
+                        : publisherAudioStatus ===
+                            "processing"
+                          ? "animate-pulse bg-[#f21f2b]"
+                          : publisherAudioStatus ===
+                              "failed"
+                            ? "bg-red-600"
+                            : "bg-white/25"
+                    }`}
+                  />
+
+                  {publisherAudioStatus ===
+                  "ready"
+                    ? "Ready"
+                    : publisherAudioStatus ===
+                        "processing"
+                      ? "Generating"
+                      : publisherAudioStatus ===
+                          "failed"
+                        ? "Failed"
+                        : "Not generated"}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-5">
+            {!initialData ? (
+              <div className="mt-4 border border-amber-500/20 bg-amber-500/5 p-4">
+                <div className="flex gap-3">
+                  <span className="mt-0.5 text-amber-400">
+                    ●
+                  </span>
+
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.12em] text-amber-300">
+                      Save draft first
+                    </p>
+
+                    <p className="mt-1 text-xs leading-5 text-white/45">
+                      Save this story once to create its article URL. Publisher Audio will then be ready to generate narration.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {publisherAudioMessage ? (
+              <div
+                className={`mt-4 border p-4 ${
+                  publisherAudioStatus ===
+                  "failed"
+                    ? "border-red-700/30 bg-red-950/20"
+                    : publisherAudioStatus ===
+                        "ready"
+                      ? "border-green-500/20 bg-green-500/5"
+                      : "border-white/10 bg-black"
+                }`}
+              >
+                <p
+                  className={`text-xs leading-5 ${
+                    publisherAudioStatus ===
+                    "failed"
+                      ? "text-red-300"
+                      : publisherAudioStatus ===
+                          "ready"
+                        ? "text-green-300"
+                        : "text-white/55"
+                  }`}
+                >
+                  {
+                    publisherAudioMessage
+                  }
+                </p>
+              </div>
+            ) : null}
+
+            <button
+              type="button"
+              disabled={
+                !initialData ||
+                isGeneratingAudio
+              }
+              onClick={() =>
+                void generateArticleAudio()
+              }
+              className="mt-5 w-full bg-[#f21f2b] px-4 py-3.5 text-xs font-black uppercase tracking-[0.12em] text-white transition hover:bg-[#ff3340] disabled:cursor-not-allowed disabled:opacity-35"
+            >
+              {isGeneratingAudio
+                ? "Generating Narration..."
+                : publisherAudioStatus ===
+                    "ready"
+                  ? "Regenerate Audio"
+                  : publisherAudioStatus ===
+                      "failed"
+                    ? "Try Again"
+                    : "Generate Article Audio"}
+            </button>
+
+            {publisherAudioStatus ===
+              "ready" &&
+            publisherAudioArticleId ? (
+              <>
+                <div className="mt-5 border border-white/10 bg-black p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`h-2 w-2 rounded-full ${
+                            publisherAudioEnabled
+                              ? "bg-green-500"
+                              : "bg-white/25"
+                          }`}
+                        />
+
+                        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/60">
+                          Public Player
+                        </p>
+                      </div>
+
+                      <p className="mt-2 text-[11px] leading-5 text-white/40">
+                        {publisherAudioEnabled
+                          ? "Readers can listen to this article."
+                          : "Audio is ready but hidden from readers."}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-label="Show Publisher Audio player on article"
+                      aria-checked={
+                        publisherAudioEnabled
+                      }
+                      disabled={
+                        isUpdatingPublisherAudioEnabled
+                      }
+                      onClick={() =>
+                        void updatePublisherAudioEnabled(
+                          !publisherAudioEnabled,
+                        )
+                      }
+                      className={`relative h-7 w-12 shrink-0 rounded-full transition ${
+                        publisherAudioEnabled
+                          ? "bg-[#f21f2b]"
+                          : "bg-white/15"
+                      } disabled:cursor-not-allowed disabled:opacity-50`}
+                    >
+                      <span
+                        className={`absolute top-1 h-5 w-5 rounded-full bg-white transition ${
+                          publisherAudioEnabled
+                            ? "left-6"
+                            : "left-1"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-5">
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/40">
+                      Preview
+                    </p>
+
+                    <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-green-400">
+                      Audio Ready
+                    </span>
+                  </div>
+
+                  <iframe
+                    src={`${process.env
+                      .NEXT_PUBLIC_PUBLISHER_AUDIO_URL ??
+                      "http://localhost:3000"}/player/${encodeURIComponent(
+                      publisherAudioArticleId,
+                    )}`}
+                    title="Publisher Audio preview"
+                    className="w-full border-0"
+                    style={{
+                      height: "230px",
+                    }}
+                    loading="lazy"
+                  />
+                </div>
+              </>
+            ) : null}
+          </div>
+
+          <div className="border-t border-white/10 bg-black/30 px-5 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[9px] font-black uppercase tracking-[0.12em] text-white/25">
+                Powered by Please Rewind Network
+              </p>
+
+              <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-white/20">
+                Publisher Audio
+              </span>
+            </div>
+          </div>
+        </section>
         <section className="border border-white/10 bg-[#0b0d0f] p-5">
           <p className="text-xs font-black uppercase tracking-[0.16em] text-[#f21f2b]">
             Publishing
