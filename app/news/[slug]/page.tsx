@@ -496,19 +496,18 @@ const storyPeople =
         story.publisher_audio_status ===
           "ready" &&
         story.publisher_audio_article_id ? (
-          <div className="mx-auto mt-8 max-w-3xl">
-            <iframe
-              src={`${process.env.NEXT_PUBLIC_PUBLISHER_AUDIO_URL ?? "http://localhost:3000"}/player/${encodeURIComponent(
-                story.publisher_audio_article_id,
-              )}`}
-              title="Listen to this article"
-              className="block w-full border-0"
-              style={{
-                height: "230px",
-              }}
-              loading="lazy"
-            />
-          </div>
+          <iframe
+            src={`${process.env.NEXT_PUBLIC_PUBLISHER_AUDIO_URL ?? "http://localhost:3000"}/player/${encodeURIComponent(
+              story.publisher_audio_article_id,
+            )}`}
+            title={`Listen to ${story.title}`}
+            loading="lazy"
+            allow="autoplay"
+            className="mx-auto mt-8 block w-full max-w-3xl border-0"
+            style={{
+              height: "220px",
+            }}
+          />
         ) : null}
 
         <div className="mx-auto mt-12 max-w-3xl">
