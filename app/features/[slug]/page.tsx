@@ -18,6 +18,8 @@ import SiteFooter from "@/components/site/SiteFooter";
 import SiteHeader from "@/components/site/SiteHeader";
 
 import BreadcrumbJsonLd from "@/components/seo/BreadcrumbJsonLd";
+import ArticleLeaderboardAd from "@/components/ads/ArticleLeaderboardAd";
+import ArticleInlineAd from "@/components/ads/ArticleInlineAd";
 
 import {
   getCuratedPeople,
@@ -559,6 +561,10 @@ const articleJsonLd = {
           </div>
         ) : null}
 
+        <div className="site-shell mt-10">
+          <ArticleLeaderboardAd />
+        </div>
+
         <div className="site-shell py-10 sm:py-14">
           <div className="mx-auto max-w-3xl">
             {feature.intro ? (
@@ -605,10 +611,8 @@ const articleJsonLd = {
                     : null;
 
                 return (
+                  <div key={index}>
                   <section
-                    key={
-                      index
-                    }
                     className="mb-16"
                   >
                     {section.eyebrow ? (
@@ -628,34 +632,13 @@ const articleJsonLd = {
                     ) : null}
 
                     {section.body ? (
-                      <div className="mt-5 text-base leading-8 text-white/70">
-                        {section.body
-                          .split(
-                            "\n",
-                          )
-                          .filter(
-                            Boolean,
-                          )
-                          .map(
-                            (
-                              paragraph:
-                                string,
-                              paragraphIndex:
-                                number,
-                            ) => (
-                              <p
-                                key={
-                                  paragraphIndex
-                                }
-                                className="mb-5"
-                              >
-                                {
-                                  paragraph
-                                }
-                              </p>
-                            ),
-                          )}
-                      </div>
+                      <div
+                        className="mt-5 text-base leading-8 text-white/70 [&_p]:mb-5 [&_strong]:font-black [&_strong]:text-white [&_em]:italic [&_a]:font-bold [&_a]:text-[#f21f2b] [&_a]:underline [&_a]:decoration-[#f21f2b]/40 [&_a]:underline-offset-4 hover:[&_a]:text-white [&_ul]:mb-5 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:mb-5 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:mb-2 [&_blockquote]:my-6 [&_blockquote]:border-l-4 [&_blockquote]:border-[#f21f2b] [&_blockquote]:pl-5 [&_blockquote]:italic [&_h2]:mb-4 [&_h2]:mt-8 [&_h2]:text-3xl [&_h2]:font-black [&_h2]:text-white [&_h3]:mb-3 [&_h3]:mt-7 [&_h3]:text-2xl [&_h3]:font-black [&_h3]:text-white"
+                        dangerouslySetInnerHTML={{
+                          __html:
+                            section.body,
+                        }}
+                      />
                     ) : null}
 
                     {section.imageUrl ? (
@@ -688,6 +671,12 @@ const articleJsonLd = {
                       </div>
                     ) : null}
                   </section>
+
+                  {index === 1 &&
+                  sections.length > 2 ? (
+                    <ArticleInlineAd />
+                  ) : null}
+                  </div>
                 );
               },
             )}

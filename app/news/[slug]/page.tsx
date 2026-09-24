@@ -24,6 +24,8 @@ import SiteFooter from "@/components/site/SiteFooter";
 import SiteHeader from "@/components/site/SiteHeader";
 
 import BreadcrumbJsonLd from "@/components/seo/BreadcrumbJsonLd";
+import ArticleLeaderboardAd from "@/components/ads/ArticleLeaderboardAd";
+import ArticleInlineAd from "@/components/ads/ArticleInlineAd";
 
 const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL ??
@@ -492,6 +494,10 @@ const storyPeople =
           <div className="movie-card-image mx-auto mt-10 aspect-[16/9] max-w-6xl border border-white/10" />
         )}
 
+        <div className="mx-auto mt-10 max-w-6xl">
+          <ArticleLeaderboardAd />
+        </div>
+
         {story.publisher_audio_enabled &&
         story.publisher_audio_status ===
           "ready" &&
@@ -544,10 +550,8 @@ const storyPeople =
               section,
               index,
             ) => (
+              <div key={index}>
               <section
-                key={
-                  index
-                }
                 className="mt-12 border-t border-white/10 pt-9"
               >
                 {section.eyebrow ? (
@@ -637,6 +641,13 @@ const storyPeople =
   );
 })()}
               </section>
+
+              {index === 1 &&
+              body.sections &&
+              body.sections.length > 2 ? (
+                <ArticleInlineAd />
+              ) : null}
+              </div>
             ),
           )}
 
